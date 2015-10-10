@@ -1,6 +1,7 @@
 require 'love-watch' ()
 
 function love.load()
+	love.filesystem.watch("/tmp/wat.json")
 end
 
 function love.filecreated(name)

@@ -21,12 +21,12 @@ end
 
 local op_bundles = {
 	create = "create, moved_to",
-	change = "modify",
+	change = "modify, close_write",
 	remove = "delete, delete_self, moved_from, move_self"
 }
 
 local function bundle(...)
-	local t = {}
+	local t = {"ignored"}
 	for i=1, select('#', ...) do
 		local s = select(i, ...)
 		local v = assert(op_bundles[s], string.format("Invalid event: %s", s))
@@ -41,7 +41,7 @@ function watch:add(name, ...)
 	if select('#', ...) > 0 then
 		ops = bundle(...)
 	else
-		ops = "create, modify, delete, moved_to, moved_from, delete_self"
+		ops = "ignored, create, modify, close_write, delete, moved_to, moved_from, delete_self"
 	end
 
 	local wd, err = self.fd:inotify_add_watch(name, ops)
@@ -104,6 +104,10 @@ local function parse_event(self, ev)
 		return {"filechanged", name}
 	elseif ev.delete or ev.delete_self or ev.moved_from or ev.move_self then
 		return {"fileremoved", name}
+	elseif ev.ignored then
+		self:remove(name)
+		self:add(name)
+		return 
 	end
 end
 
